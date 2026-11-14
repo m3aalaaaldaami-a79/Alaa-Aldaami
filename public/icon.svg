@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#15803d"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- Shopping bag body -->
+  <path d="M132 196h248l22 196c2 18-12 34-30 34H140c-18 0-32-16-30-34l22-196z" fill="#ffffff"/>
+  <!-- Bag handles -->
+  <path d="M192 196v-36c0-35 29-64 64-64s64 29 64 64v36" fill="none" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/>
+  <!-- Fresh leaf emblem inside bag -->
+  <path d="M256 356c-42-12-66-46-66-86 38 0 66 26 66 64 0-38 28-64 66-64 0 40-24 74-66 86z" fill="#15803d"/>
+  <path d="M256 262v98" stroke="#0f766e" stroke-width="10" stroke-linecap="round"/>
+</svg>

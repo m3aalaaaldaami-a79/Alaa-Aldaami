@@ -1,0 +1,6 @@
+{
+  "name": "علاكتي",
+  "description": "تطبيق علاكتي لإعداد قائمة التسوق من الفواكه والخضروات واللحوم والدجاج والأسماك حسب الوزن والكمية وإرسالها كبطاقة إلى واتساب.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
