@@ -27,17 +27,23 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # 4. تثبيت حزم المشروع وبناء نسخة الويب (مع تجاوز تعارض الإصدارات)
+      # 4. تثبيت حزم المشروع وبناء نسخة الويب
       - name: Install dependencies and build web app
         run: |
           npm install --legacy-peer-deps
           npm run build
 
-      # 5. تثبيت وتهيئة Capacitor لتحويل الويب إلى أندرويد تلقائياً
+      # 5. تثبيت وتهيئة Capacitor باستخدام ملف JSON لتجنب خطأ TypeScript
       - name: Setup Capacitor Android
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android --legacy-peer-deps
-          npx cap init "Alaa Aldaami" "com.alaa.aldaami.app" --web-dir=dist
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.alaa.aldaami.app",
+            "appName": "Alaa Aldaami",
+            "webDir": "dist"
+          }
+          EOF
           npx cap add android
           npx cap sync android
 
