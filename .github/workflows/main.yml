@@ -21,12 +21,12 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Setup Gradle
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Locate Project, Resolve Kotlin Conflict, and Build APK
         run: |
-          # 1. البحث عن مجلد المشروع (مجلد android)
+          # 1. البحث عن مجلد المشروع
           PROJECT_DIR=$(find . -maxdepth 3 -name "settings.gradle*" -exec dirname {} \; | head -n 1)
           if [ -z "$PROJECT_DIR" ]; then
             PROJECT_DIR="."
@@ -47,25 +47,21 @@ jobs:
           }
           EOF
 
-          # 3. إنشاء debug.keystore إذا كان مفقوداً
-          if [ ! -f "debug.keystore" ]; then
-            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-            mkdir -p app
-            cp debug.keystore app/debug.keystore
+          # 3. دمج إعدادات الحل في الـ root build.gradle إن وجد
+          if [ -f "build.gradle" ]; then
+              echo "apply from: 'fix-kotlin.gradle'" >> build.gradle
+          elif [ -f "build.gradle.kts" ]; then
+              echo "apply(from = \"fix-kotlin.gradle\")" >> build.gradle.kts
           fi
 
-          # 4. تشغيل البناء مع تمرير ملف حل التضارب (-I fix-kotlin.gradle)
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-            ./gradlew assembleDebug -I fix-kotlin.gradle --stacktrace
-          else
-            gradle wrapper
-            chmod +x ./gradlew
-            ./gradlew assembleDebug -I fix-kotlin.gradle --stacktrace
-          fi
+          # 4. منح صلاحيات التنفيذ لـ gradlew وبناء الـ Debug APK
+          chmod +x gradlew
+          ./gradlew assembleDebug --info
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: "**/app/build/outputs/apk/debug/app-debug.apk"
+          name: app-debug-apk
+          path: |
+            **/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/debug/*.apk
