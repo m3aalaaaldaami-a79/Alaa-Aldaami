@@ -24,9 +24,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Locate Project and Build Debug APK
+      - name: Locate Project, Resolve Kotlin Conflict, and Build APK
         run: |
-          # البحث عن مجلد المشروع الذي يحتوي على settings.gradle
+          # 1. البحث عن مجلد المشروع (مجلد android)
           PROJECT_DIR=$(find . -maxdepth 3 -name "settings.gradle*" -exec dirname {} \; | head -n 1)
           if [ -z "$PROJECT_DIR" ]; then
             PROJECT_DIR="."
@@ -34,21 +34,34 @@ jobs:
           echo "Project directory found at: $PROJECT_DIR"
           cd "$PROJECT_DIR"
 
-          # إنشاء debug.keystore لتجنب أي خطأ في التوقيع
+          # 2. إنشاء ملف حل تضارب مكتبات Kotlin (Duplicate class kotlin-stdlib)
+          cat << 'EOF' > fix-kotlin.gradle
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+                      force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
+                      force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+                  }
+              }
+          }
+          EOF
+
+          # 3. إنشاء debug.keystore إذا كان مفقوداً
           if [ ! -f "debug.keystore" ]; then
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
             mkdir -p app
             cp debug.keystore app/debug.keystore
           fi
 
-          # تشغيل gradlew أو توليده تلقائياً إذا لم يكن مرفوعاً في المستودع
+          # 4. تشغيل البناء مع تمرير ملف حل التضارب (-I fix-kotlin.gradle)
           if [ -f "./gradlew" ]; then
             chmod +x ./gradlew
-            ./gradlew assembleDebug --stacktrace
+            ./gradlew assembleDebug -I fix-kotlin.gradle --stacktrace
           else
             gradle wrapper
             chmod +x ./gradlew
-            ./gradlew assembleDebug --stacktrace
+            ./gradlew assembleDebug -I fix-kotlin.gradle --stacktrace
           fi
 
       - name: Upload APK
