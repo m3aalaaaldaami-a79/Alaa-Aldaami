@@ -1,0 +1,67 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Locate Project, Resolve Kotlin Conflict, and Build APK
+        run: |
+          # 1. البحث عن مجلد المشروع
+          PROJECT_DIR=$(find . -maxdepth 3 -name "settings.gradle*" -exec dirname {} \; | head -n 1)
+          if [ -z "$PROJECT_DIR" ]; then
+            PROJECT_DIR="."
+          fi
+          echo "Project directory found at: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+
+          # 2. إنشاء ملف حل تضارب مكتبات Kotlin (Duplicate class kotlin-stdlib)
+          cat << 'EOF' > fix-kotlin.gradle
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+                      force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
+                      force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+                  }
+              }
+          }
+          EOF
+
+          # 3. دمج إعدادات الحل في الـ root build.gradle إن وجد
+          if [ -f "build.gradle" ]; then
+              echo "apply from: 'fix-kotlin.gradle'" >> build.gradle
+          elif [ -f "build.gradle.kts" ]; then
+              echo "apply(from = \"fix-kotlin.gradle\")" >> build.gradle.kts
+          fi
+
+          # 4. منح صلاحيات التنفيذ لـ gradlew وبناء الـ Debug APK
+          chmod +x gradlew
+          ./gradlew assembleDebug --info
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: |
+            **/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/debug/*.apk
